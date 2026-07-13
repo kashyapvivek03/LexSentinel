@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Phishing Website Checker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: #0b0b0f;
+    color: #e8eaed;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  .logo {
+    position: absolute;
+    top: 24px;
+    left: 32px;
+    z-index: 3;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 19px;
+    letter-spacing: -0.01em;
+    color: #f5f5f5;
+  }
+
+  .page {
+    position: relative;
+    min-height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* --- Breathing glow behind the search bar --- */
+  .glow-wrap {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .glow {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity .7s ease;
+  }
+  .glow.active { opacity: 1; }
+  .glow-inner {
+    width: min(60vw, 640px);
+    height: min(60vw, 640px);
+    border-radius: 50%;
+    filter: blur(90px);
+    animation: breathe 4s ease-in-out infinite;
+  }
+  .glow-blue .glow-inner   { background: radial-gradient(circle, rgba(59,130,246,.55), transparent 70%); }
+  .glow-green .glow-inner  { background: radial-gradient(circle, rgba(16,185,129,.55), transparent 70%); }
+  .glow-red .glow-inner    { background: radial-gradient(circle, rgba(239,68,68,.55), transparent 70%); }
+  .glow-yellow .glow-inner { background: radial-gradient(circle, rgba(234,179,8,.55), transparent 70%); }
+
+  @keyframes breathe {
+    0%, 100% { transform: scale(1);    opacity: .7; }
+    50%      { transform: scale(1.12); opacity: 1;  }
+  }
+
+  /* --- Content --- */
+  .content {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 750px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .welcome {
+    font-family: 'Manrope', sans-serif;
+    font-size: 52px;
+    font-weight: 800;
+    line-height: 1.15;
+    color: #f1f3f4;
+    text-align: center;
+    margin: 0 0 36px;
+  }
+
+  .search-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .searchbar {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    background: #1e1e1e;
+    border-radius: 9999px;
+    padding: 6px 6px 6px 22px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.4);
+  }
+
+  /* --- "+" bulk-check menu --- */
+  .plus-wrap { position: relative; flex-shrink: 0; }
+  .plus-btn {
+    width: 46px;
+    height: 46px;
+    padding: 0;
+    border-radius: 50%;
+    background: #1e1e1e;
+    box-shadow: 0 4px 24px rgba(0,0,0,.4);
+    font-size: 22px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .plus-btn:hover:not(:disabled) { background: #2a2a2a; }
+
+  .plus-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: #1e1e1e;
+    border-radius: 14px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    padding: 6px;
+    min-width: 180px;
+    display: none;
+    flex-direction: column;
+    z-index: 10;
+  }
+  .plus-menu.open { display: flex; }
+  .plus-menu button {
+    all: unset;
+    box-sizing: border-box;
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 9px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: #e8eaed;
+    cursor: pointer;
+  }
+  .plus-menu button:hover { background: #2a2a2a; }
+
+  /* --- Modals --- */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.6);
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-card {
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+    max-height: 85vh;
+    overflow-y: auto;
+    background: #17171b;
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 0 16px 60px rgba(0,0,0,.6);
+  }
+  .modal-card-lg {
+    max-width: none;
+    width: 85vw;
+    height: 85vh;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  /* padding-right keeps content clear of the absolutely-positioned
+     .modal-close (spans 18px-46px from the card's right edge). */
+  .modal-header-row { display: flex; align-items: center; justify-content: space-between; margin: 0 0 18px; padding-right: 44px; }
+  .modal-header-row .modal-title { margin: 0; }
+  .paste-back-btn { display: none; padding: 8px 16px; font-size: 13px; }
+  .modal-card-lg.has-results .paste-back-btn { display: inline-flex; align-items: center; }
+
+  .modal-card-lg .bulk-textarea { flex: 1; min-height: 160px; }
+  .modal-card-lg #pasteInputSection {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .modal-card-lg.has-results #pasteInputSection { display: none; }
+  .modal-card-lg #pasteResultsWrap {
+    display: none;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .modal-card-lg.has-results #pasteResultsWrap {
+    flex: 1;
+    display: flex;
+  }
+  .modal-title {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    color: #f1f3f4;
+    margin: 0 0 18px;
+  }
+  .modal-close {
+    all: unset;
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8a8f98;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .modal-close:hover { background: #2a2a2a; color: #e8eaed; }
+
+  textarea.bulk-textarea {
+    width: 100%;
+    min-height: 160px;
+    resize: vertical;
+    background: #1e1e1e;
+    border: 1px solid #2c2c33;
+    border-radius: 14px;
+    color: #e8eaed;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    padding: 14px 16px;
+    outline: none;
+  }
+  textarea.bulk-textarea:focus { border-color: #2563eb; }
+  textarea.bulk-textarea::placeholder { color: #8a8f98; }
+
+  .modal-actions { display: flex; justify-content: flex-end; margin-top: 16px; gap: 10px; }
+
+  .drop-zone {
+    width: 100%;
+    min-height: 140px;
+    border: 2px dashed #2c2c33;
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #8a8f98;
+    font-size: 14px;
+    text-align: center;
+    padding: 20px;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .drop-zone:hover, .drop-zone.dragover { border-color: #2563eb; background: rgba(37,99,235,.06); }
+  .drop-zone .file-name { color: #e8eaed; font-weight: 500; }
+
+  .modal-error {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #fca5a5;
+    min-height: 16px;
+  }
+
+  .modal-loading {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    font-size: 14px;
+    color: #b8bcc4;
+  }
+  .modal-loading.active { display: flex; }
+  .spinner-lg {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255,255,255,.25);
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  .bulk-summary { margin-top: 14px; font-size: 14px; color: #b8bcc4; flex-shrink: 0; }
+
+  .bulk-columns {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .bulk-col {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-radius: 14px;
+    border: 1px solid #2c2c33;
+    background: #17171b;
+    overflow: hidden;
+  }
+
+  /* Reuses the same radial-gradient + blur technique as .glow-inner on the
+     single-check page, scoped behind one column instead of the whole page. */
+  .bulk-col-glow {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .bulk-col-glow-inner {
+    width: 140%;
+    height: 140%;
+    border-radius: 50%;
+    filter: blur(60px);
+  }
+  .bulk-col-unsafe .bulk-col-glow-inner  { background: radial-gradient(circle, rgba(239,68,68,.35), transparent 70%); }
+  .bulk-col-safe .bulk-col-glow-inner    { background: radial-gradient(circle, rgba(16,185,129,.35), transparent 70%); }
+  .bulk-col-invalid .bulk-col-glow-inner { background: radial-gradient(circle, rgba(234,179,8,.35), transparent 70%); }
+
+  .bulk-col-header {
+    position: relative;
+    z-index: 1;
+    padding: 12px 14px;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: #f1f3f4;
+    border-bottom: 1px solid #2c2c33;
+    flex-shrink: 0;
+  }
+
+  .bulk-col-list {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 6px 10px;
+  }
+
+  .bulk-row {
+    padding: 10px 6px;
+    border-bottom: 1px solid #232329;
+    font-size: 13px;
+  }
+  .bulk-row:last-child { border-bottom: none; }
+  .bulk-row-url { color: #e8eaed; word-break: break-all; }
+  .bulk-row-meta { margin-top: 3px; color: #8a8f98; font-size: 12px; }
+  .bulk-row-reason { margin-top: 3px; color: #b8bcc4; font-size: 12px; }
+  .bulk-col-empty { color: #8a8f98; font-size: 13px; padding: 10px 6px; }
+
+  .download-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .btn-secondary { background: #2a2a2a; }
+  .btn-secondary:hover:not(:disabled) { background: #34343c; }
+
+  input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #e8eaed;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    padding: 12px 0;
+    min-width: 0;
+  }
+  input::placeholder { color: #8a8f98; }
+
+  button {
+    position: relative;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 9999px;
+    padding: 12px 24px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform .15s ease, background .2s ease, opacity .2s ease;
+    flex-shrink: 0;
+  }
+  button:hover:not(:disabled) { background: #3b74f0; }
+  button:active:not(:disabled) { transform: scale(.95); }
+  button:disabled { opacity: .7; cursor: default; }
+
+  .btn-spinner {
+    display: none;
+    width: 15px;
+    height: 15px;
+    border: 2px solid rgba(255,255,255,.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  button.loading .btn-text { display: none; }
+  button.loading .btn-spinner { display: inline-block; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .result {
+    margin-top: 22px;
+    font-size: 14px;
+    text-align: center;
+    min-height: 20px;
+  }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-weight: 600; font-size: 12px; }
+  .safe { background: #064e3b; color: #6ee7b7; }
+  .unsafe { background: #4c0519; color: #fca5a5; }
+  .invalid { background: #facc15; color: #1c1500; }
+
+  .disclaimer {
+    color: rgba(255,255,255,.6);
+    font-size: 14px;
+    font-style: italic;
+    text-align: center;
+    margin-top: 18px;
+  }
+
+  @media (max-width: 480px) {
+    .logo { top: 16px; left: 20px; font-size: 17px; }
+    .welcome { font-size: 2.1rem; margin-bottom: 24px; }
+    .searchbar { padding: 6px 6px 6px 16px; }
+    button { padding: 11px 18px; }
+    .plus-btn { width: 42px; height: 42px; }
+    .modal-card { padding: 20px; }
+    .modal-card-lg { width: 95vw; height: 90vh; max-height: 90vh; }
+    .bulk-columns { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <div class="logo">LexSentinel</div>
+  <div class="page">
+    <div class="glow-wrap">
+      <div class="glow glow-blue active"><div class="glow-inner"></div></div>
+      <div class="glow glow-green"><div class="glow-inner"></div></div>
+      <div class="glow glow-red"><div class="glow-inner"></div></div>
+      <div class="glow glow-yellow"><div class="glow-inner"></div></div>
+    </div>
+
+    <div class="content">
+      <h1 class="welcome" id="greeting"></h1>
+
+      <div class="search-row">
+        <div class="searchbar">
+          <input id="urlInput" placeholder="Enter a URL to check" />
+          <button id="checkBtn" onclick="checkUrl()">
+            <span class="btn-text">Check</span>
+            <span class="btn-spinner"></span>
+          </button>
+        </div>
+
+        <div class="plus-wrap">
+          <button class="plus-btn" id="plusBtn" type="button" aria-label="Check multiple URLs" onclick="togglePlusMenu()">+</button>
+          <div class="plus-menu" id="plusMenu">
+            <button type="button" onclick="openModal('paste')">Bulk paste</button>
+            <button type="button" onclick="openModal('upload')">Upload file</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="result" class="result"></div>
+      <div class="disclaimer">The model can make mistakes.</div>
+    </div>
+  </div>
+
+  <!-- Bulk paste modal -->
+  <div class="modal-overlay" id="pasteModal">
+    <div class="modal-card modal-card-lg">
+      <button class="modal-close" type="button" aria-label="Close" onclick="closeModal('paste')">&#10005;</button>
+      <div class="modal-header-row">
+        <h2 class="modal-title">Bulk paste</h2>
+        <button type="button" class="btn-secondary paste-back-btn" onclick="resetPasteInput()">&larr; New check</button>
+      </div>
+      <div id="pasteInputSection">
+        <textarea class="bulk-textarea" id="pasteTextarea" placeholder="Paste URLs here (one per line)"></textarea>
+        <div class="modal-actions">
+          <button type="button" id="pasteCheckBtn" onclick="submitPasteCheck()">
+            <span class="btn-text">Check</span>
+            <span class="btn-spinner"></span>
+          </button>
+        </div>
+        <div class="modal-loading" id="pasteLoading"><div class="spinner-lg"></div><span id="pasteLoadingText">Checking your URLs&hellip;</span></div>
+        <div class="modal-error" id="pasteError"></div>
+      </div>
+      <div id="pasteResultsWrap"></div>
+    </div>
+  </div>
+
+  <!-- Upload file modal -->
+  <div class="modal-overlay" id="uploadModal">
+    <div class="modal-card">
+      <button class="modal-close" type="button" aria-label="Close" onclick="closeModal('upload')">&#10005;</button>
+      <h2 class="modal-title">Upload file</h2>
+      <input type="file" id="fileInput" accept=".txt,.csv" style="display:none" onchange="onFileChosen(this.files[0])" />
+      <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <span id="dropZoneText">Upload file (.txt or .csv, under 2MB)</span>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="uploadCheckBtn" disabled onclick="submitUploadCheck()">
+          <span class="btn-text">Check</span>
+          <span class="btn-spinner"></span>
+        </button>
+      </div>
+      <div class="modal-loading" id="uploadLoading"><div class="spinner-lg"></div><span>Checking your file&hellip;</span></div>
+      <div class="modal-error" id="uploadError"></div>
+      <div id="uploadResultsWrap"></div>
+    </div>
+  </div>
+
+<script>
+const GREETINGS = [
+  "What link are we checking today?",
+  "Suspicious URL? Let's find out.",
+  "Stay one step ahead of phishing.",
+  "Trust, but verify.",
+  "Got a link that feels off? Check it here.",
+  "Every link deserves a second look.",
+  "Paste a URL — we'll do the rest.",
+  "One check, peace of mind.",
+];
+document.getElementById('greeting').textContent =
+  GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
+
+// The input isn't inside a <form>, so Enter did nothing - button-click
+// was the only way to submit. Standard expectation for a single-field
+// search-style UI.
+document.getElementById('urlInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') checkUrl();
+});
+
+// Escapes attacker-controlled text before it goes into innerHTML.
+// checked_url/note are user-controlled (checking
+// a suspicious URL IS the use case) and were interpolated raw into a
+// template literal assigned to innerHTML - e.g. a checked URL of
+// "https://example.com/<img src=x onerror=alert(document.cookie)>"
+// would execute script on this page. textContent -> innerHTML round-trip
+// is the standard, dependency-free way to escape.
+function escapeHtml(s) {
+  const div = document.createElement('div');
+  div.textContent = s == null ? '' : String(s);
+  return div.innerHTML;
+}
+
+function setGlow(state) {
+  document.querySelectorAll('.glow').forEach(g => g.classList.remove('active'));
+  document.querySelector('.glow-' + state).classList.add('active');
+}
+
+// AbortController ties each response to the request that produced it, so a
+// slow older request can NEVER overwrite the display after a newer one has
+// already returned. This is the direct fix for the "input says X, result
+// says Y" bug: without this, a slow first request finishing after a fast
+// second request would silently clobber the correct, newer result.
+let currentController = null;
+
+async function checkUrl() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) return;
+
+  if (currentController) currentController.abort();
+  currentController = new AbortController();
+  const thisController = currentController;
+
+  const btn = document.getElementById('checkBtn');
+  btn.disabled = true;
+  btn.classList.add('loading');
+
+  try {
+    const res = await fetch('/api/check', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({url}),
+      signal: thisController.signal,
+    });
+    // Non-2xx (422 URL-too-long, 429 rate limit, 503 model missing) used
+    // to "work" only because data.verdict.toUpperCase() threw a TypeError
+    // that happened to land in the catch block. Handle it deliberately:
+    // show the server's own detail message when it's a plain string.
+    if (!res.ok) {
+      let msg = 'Error checking URL.';
+      try {
+        const err = await res.json();
+        if (typeof err.detail === 'string') msg = err.detail;
+      } catch {}
+      if (thisController !== currentController) return;
+      setGlow('blue');
+      document.getElementById('result').innerHTML =
+        `<span style="color:#f87171">${escapeHtml(msg)}</span>`;
+      return;
+    }
+
+    const data = await res.json();
+
+    // Guard: only render if this is still the most recent request.
+    if (thisController !== currentController) return;
+
+    if (data.status === 'invalid') {
+      setGlow('yellow');
+      document.getElementById('result').innerHTML = `
+        <span class="badge invalid">INVALID</span>
+        ${escapeHtml(data.message || "This doesn't look like a valid URL.")}`;
+      return;
+    }
+
+    const badgeClass = data.verdict === 'safe' ? 'safe' : 'unsafe';
+    setGlow(data.verdict === 'safe' ? 'green' : 'red');
+    const chancePct = data.confidence != null
+      ? (data.verdict === 'safe' ? (1 - data.confidence) : data.confidence) * 100
+      : null;
+    const chanceStr = chancePct != null
+      ? ` ${chancePct.toFixed(1)}% chance this is ${data.verdict}.` : '';
+    // reason is only ever set by the backend when verdict === 'unsafe' -
+    // a plain-language "why", not the raw model/stage internals.
+    const reasonStr = data.reason ? `<br/><span style="color:#fca5a5">${escapeHtml(data.reason)}</span>` : '';
+    document.getElementById('result').innerHTML = `
+      <span class="badge ${badgeClass}">${data.verdict.toUpperCase()}</span>
+      This website is ${data.verdict}.${chanceStr}${reasonStr}`;
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      setGlow('blue');
+      document.getElementById('result').innerHTML =
+        `<span style="color:#f87171">Error checking URL.</span>`;
+    }
+  } finally {
+    if (thisController === currentController) {
+      btn.disabled = false;
+      btn.classList.remove('loading');
+    }
+  }
+}
+
+// ------------------------------------------------------------------
+// Bulk checker: "+" menu, paste modal, upload modal.
+// ------------------------------------------------------------------
+
+function togglePlusMenu() {
+  document.getElementById('plusMenu').classList.toggle('open');
+}
+
+document.addEventListener('click', (e) => {
+  const wrap = document.querySelector('.plus-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('plusMenu').classList.remove('open');
+  }
+});
+
+// Matches the placeholder hardcoded in the drop-zone markup - used to
+// restore it below when the upload modal is reopened. See openModal's
+// reset logic for why this matters.
+const UPLOAD_DROPZONE_PLACEHOLDER = 'Upload file (.txt or .csv, under 2MB)';
+
+// Fully clears the Bulk paste modal: the textarea input, the rendered
+// results (the safe/unsafe/invalid columns, their counts, and the summary
+// line all live inside pasteResultsWrap, so wiping its innerHTML also
+// removes the per-column glow with them - there's no separate glow state
+// to reset), any error text, and the input/results view toggle. Called
+// from every close path (X button, backdrop click, Escape) so a reopen is
+// always guaranteed fresh, plus defensively on open as a safety net.
+function resetPasteModal() {
+  document.getElementById('pasteTextarea').value = '';
+  document.getElementById('pasteResultsWrap').innerHTML = '';
+  document.getElementById('pasteError').textContent = '';
+  document.querySelector('#pasteModal .modal-card-lg').classList.remove('has-results');
+}
+
+function openModal(which) {
+  document.getElementById('plusMenu').classList.remove('open');
+  document.getElementById(which + 'Error').textContent = '';
+  // 2026-07 audit fix: reopening a modal after a previous check used to
+  // leave everything from that prior run in place - old results/download
+  // buttons still showing, and (worse) for the upload modal, a rejected
+  // file left the drop zone displaying the FILENAME FROM AN EARLIER VALID
+  // SELECTION while the Check button stayed disabled and an error was
+  // shown - a directly contradictory display. Each open now starts clean.
+  if (which === 'paste') {
+    resetPasteModal();
+  } else if (which === 'upload') {
+    document.getElementById('uploadResultsWrap').innerHTML = '';
+    document.getElementById('dropZoneText').textContent = UPLOAD_DROPZONE_PLACEHOLDER;
+    document.getElementById('fileInput').value = '';
+    document.getElementById('uploadCheckBtn').disabled = true;
+    selectedFile = null;
+    lastUploadResults = null;
+  }
+  document.getElementById(which + 'Modal').classList.add('open');
+}
+
+function closeModal(which) {
+  document.getElementById(which + 'Modal').classList.remove('open');
+  if (which === 'paste') resetPasteModal();
+}
+
+document.querySelectorAll('.modal-overlay').forEach((overlay) => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target !== overlay) return;
+    overlay.classList.remove('open');
+    if (overlay.id === 'pasteModal') resetPasteModal();
+  });
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  document.querySelectorAll('.modal-overlay.open').forEach((m) => {
+    m.classList.remove('open');
+    if (m.id === 'pasteModal') resetPasteModal();
+  });
+  document.getElementById('plusMenu').classList.remove('open');
+});
+
+// Shared: renders bulk results as three independently-scrollable columns
+// (Unsafe / Safe / Invalid) from a BulkCheckResponse, each with the same
+// color-coded ambient glow used on the single-check page (see .glow-inner),
+// scoped to sit behind that column only. "Percent Chance", not "Confidence"
+// - non-technical users don't parse "confidence". Reason is only ever set
+// by the backend for unsafe rows (see CheckResponse.reason). Handles
+// status === 'invalid' (verdict null) without touching .toUpperCase() on a
+// null value - the exact bug class the old dev-only bulk.html had.
+function renderBulkRow(r) {
+  const isInvalid = r.status === 'invalid';
+  if (isInvalid) {
+    return `<div class="bulk-row">
+      <div class="bulk-row-url">${escapeHtml(r.checked_url)}</div>
+      <div class="bulk-row-meta">${escapeHtml(r.message || 'Not a valid URL.')}</div>
+    </div>`;
+  }
+  const chancePct = r.confidence != null
+    ? (r.verdict === 'safe' ? (1 - r.confidence) : r.confidence) * 100
+    : null;
+  const chanceStr = chancePct != null ? `${chancePct.toFixed(1)}% chance this is ${r.verdict}.` : '';
+  const reasonStr = r.reason ? `<div class="bulk-row-reason">${escapeHtml(r.reason)}</div>` : '';
+  return `<div class="bulk-row">
+    <div class="bulk-row-url">${escapeHtml(r.checked_url)}</div>
+    ${chanceStr ? `<div class="bulk-row-meta">${chanceStr}</div>` : ''}
+    ${reasonStr}
+  </div>`;
+}
+
+function renderBulkColumn(kind, label, rows) {
+  const list = rows.length
+    ? rows.map(renderBulkRow).join('')
+    : `<div class="bulk-col-empty">None.</div>`;
+  return `<div class="bulk-col bulk-col-${kind}">
+    <div class="bulk-col-glow"><div class="bulk-col-glow-inner"></div></div>
+    <div class="bulk-col-header">${label} — ${rows.length}</div>
+    <div class="bulk-col-list">${list}</div>
+  </div>`;
+}
+
+function renderBulkTable(container, results, summary) {
+  const unsafeRows = results.filter((r) => r.status !== 'invalid' && r.verdict === 'unsafe');
+  const safeRows = results.filter((r) => r.status !== 'invalid' && r.verdict === 'safe');
+  const invalidRows = results.filter((r) => r.status === 'invalid');
+
+  container.innerHTML = `
+    <div class="bulk-summary">${summary.total} checked — ${summary.safe} safe, ${summary.unsafe} unsafe, ${summary.invalid} invalid.</div>
+    <div class="bulk-columns">
+      ${renderBulkColumn('unsafe', 'Unsafe', unsafeRows)}
+      ${renderBulkColumn('safe', 'Safe', safeRows)}
+      ${renderBulkColumn('invalid', 'Invalid', invalidRows)}
+    </div>`;
+}
+
+// --- Bulk paste ---
+
+// Returns from the full-height results view back to the paste form for a
+// new check - clears the textarea/results too (not just the view toggle),
+// so "New check" always starts from a blank slate rather than the stale
+// text from the run that's being replaced.
+function resetPasteInput() {
+  resetPasteModal();
+}
+
+async function submitPasteCheck() {
+  const text = document.getElementById('pasteTextarea').value;
+  const errorEl = document.getElementById('pasteError');
+  const resultsWrap = document.getElementById('pasteResultsWrap');
+  errorEl.textContent = '';
+  resultsWrap.innerHTML = '';
+
+  if (!text.trim()) {
+    errorEl.textContent = 'Please paste at least one URL.';
+    return;
+  }
+
+  const btn = document.getElementById('pasteCheckBtn');
+  btn.disabled = true;
+  btn.classList.add('loading');
+  document.getElementById('pasteLoading').classList.add('active');
+
+  try {
+    const res = await fetch('/api/bulk-check-paste', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text}),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      errorEl.textContent = (data && typeof data.detail === 'string')
+        ? data.detail : 'Error checking URLs. Please try again.';
+      return;
+    }
+    renderBulkTable(resultsWrap, data.results, data.summary);
+    document.querySelector('#pasteModal .modal-card-lg').classList.add('has-results');
+  } catch (err) {
+    errorEl.textContent = 'Error checking URLs. Please try again.';
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    document.getElementById('pasteLoading').classList.remove('active');
+  }
+}
+
+// --- Upload file ---
+const MAX_UPLOAD_MB = 2;
+let selectedFile = null;
+let lastUploadResults = null;
+
+function onFileChosen(file) {
+  const errorEl = document.getElementById('uploadError');
+  const checkBtn = document.getElementById('uploadCheckBtn');
+  const dropZoneText = document.getElementById('dropZoneText');
+  errorEl.textContent = '';
+  document.getElementById('uploadResultsWrap').innerHTML = '';
+  lastUploadResults = null;
+
+  if (!file) {
+    selectedFile = null;
+    checkBtn.disabled = true;
+    return;
+  }
+
+  const name = file.name.toLowerCase();
+  if (!(name.endsWith('.txt') || name.endsWith('.csv'))) {
+    errorEl.textContent = 'Only .txt and .csv files are supported.';
+    selectedFile = null;
+    checkBtn.disabled = true;
+    return;
+  }
+  if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+    errorEl.textContent = `File too large; max is ${MAX_UPLOAD_MB}MB.`;
+    selectedFile = null;
+    checkBtn.disabled = true;
+    return;
+  }
+
+  selectedFile = file;
+  dropZoneText.textContent = file.name;
+  checkBtn.disabled = false;
+}
+
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const file = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (file) onFileChosen(file);
+});
+
+async function submitUploadCheck() {
+  if (!selectedFile) return;
+  const errorEl = document.getElementById('uploadError');
+  const resultsWrap = document.getElementById('uploadResultsWrap');
+  errorEl.textContent = '';
+  resultsWrap.innerHTML = '';
+
+  const btn = document.getElementById('uploadCheckBtn');
+  btn.disabled = true;
+  btn.classList.add('loading');
+  document.getElementById('uploadLoading').classList.add('active');
+
+  try {
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    const res = await fetch('/api/bulk-check-upload', {method: 'POST', body: formData});
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      errorEl.textContent = (data && typeof data.detail === 'string')
+        ? data.detail : 'Error checking the file. Please try again.';
+      return;
+    }
+    lastUploadResults = data.results;
+    resultsWrap.innerHTML = `
+      <div class="bulk-summary">${data.summary.total} checked — ${data.summary.safe} safe, ${data.summary.unsafe} unsafe, ${data.summary.invalid} invalid.</div>
+      <div class="download-actions">
+        <button type="button" class="btn-secondary" onclick="downloadExport('csv')">Download CSV</button>
+        <button type="button" class="btn-secondary" onclick="downloadExport('xlsx')">Download Excel</button>
+      </div>`;
+  } catch (err) {
+    errorEl.textContent = 'Error checking the file. Please try again.';
+  } finally {
+    btn.disabled = !selectedFile;
+    btn.classList.remove('loading');
+    document.getElementById('uploadLoading').classList.remove('active');
+  }
+}
+
+async function downloadExport(format) {
+  if (!lastUploadResults) return;
+  const errorEl = document.getElementById('uploadError');
+  try {
+    const res = await fetch('/api/bulk-check-export', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({results: lastUploadResults, format}),
+    });
+    if (!res.ok) {
+      errorEl.textContent = 'Could not generate the download. Please try again.';
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = format === 'xlsx' ? 'bulk_check_results.xlsx' : 'bulk_check_results.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    errorEl.textContent = 'Could not generate the download. Please try again.';
+  }
+}
+</script>
+</body>
+</html>

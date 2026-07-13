@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Warning: Suspected Phishing Site</title>
+<style>
+  :root {
+    --glow-color: rgba(239, 68, 68, 0.4);
+    --border-color: rgba(239, 68, 68, 0.55);
+  }
+  body {
+    background: #000000; color: #e5e7eb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 24px;
+  }
+  .card {
+    background: #0a0a0a; border-radius: 16px; padding: 36px 40px; max-width: 520px; width: 100%;
+    box-shadow: 0 0 40px var(--glow-color); border: 1px solid var(--border-color);
+    text-align: center;
+  }
+  .icon-wrap { display: flex; justify-content: center; margin-bottom: 14px; }
+  .icon-wrap svg { width: 44px; height: 44px; color: #f97316; }
+  h1 {
+    font-size: 22px; font-weight: 800; letter-spacing: .02em; text-transform: uppercase;
+    margin: 0 0 12px; color: #f9fafb;
+  }
+  p.desc { line-height: 1.5; color: #9ca3af; margin: 0 0 20px; font-size: 14px; }
+  .reason-box {
+    background: rgba(239, 68, 68, .08); border: 1px solid rgba(239, 68, 68, .3); border-radius: 8px;
+    padding: 12px 14px; font-size: 13.5px; line-height: 1.5; color: #fca5a5;
+    margin: 0 0 20px; text-align: left; display: none;
+  }
+  .reason-box.visible { display: block; }
+  .url-box {
+    background: #000000; border: 1px solid rgba(239, 68, 68, .5); border-radius: 8px;
+    padding: 10px 14px; font-family: monospace; font-size: 13px; word-break: break-all;
+    margin: 0 0 26px; color: #fca5a5; text-align: center;
+  }
+  .buttons { display: flex; gap: 12px; }
+  button {
+    flex: 1; border-radius: 8px; padding: 11px 20px; font-size: 14px; cursor: pointer; font-weight: 600;
+    transition: transform .12s ease, background .2s ease, border-color .2s ease, color .2s ease;
+  }
+  button:active { transform: scale(.97); }
+  .primary { background: #2563eb; color: white; border: none; }
+  .primary:hover { background: #3b74f0; }
+  .outline { background: transparent; color: #9ca3af; border: 1px solid #374151; }
+  .outline:hover { color: #d1d5db; border-color: #4b5563; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon-wrap">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2.5l7.5 2.8v5.4c0 5-3.2 9-7.5 10.8-4.3-1.8-7.5-5.8-7.5-10.8V5.3L12 2.5z"
+              stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+        <line x1="12" y1="8.2" x2="12" y2="13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <circle cx="12" cy="16.3" r="1" fill="currentColor"/>
+      </svg>
+    </div>
+    <h1>Phishing Attempt Detected</h1>
+    <p class="desc">This URL has been flagged as highly unsafe. It may be impersonating a legitimate site to steal your information.</p>
+    <div class="reason-box" id="reasonBox"></div>
+    <div class="url-box" id="blockedUrl"></div>
+    <div class="buttons">
+      <button class="outline" id="actionBtn">Close warning</button>
+      <button class="primary" id="backBtn">Go back (recommended)</button>
+    </div>
+  </div>
+
+<script src="warning.js"></script>
+</body>
+</html>

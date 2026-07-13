@@ -1,0 +1,96 @@
+{
+  "version": "20260709T131117Z",
+  "preprocessor_path": "C:\\Users\\risha\\Documents\\phishing_detector\\models\\artifacts\\preprocessor_20260709T131117Z.joblib",
+  "xgb_model_path": "C:\\Users\\risha\\Documents\\phishing_detector\\models\\artifacts\\model_20260709T131117Z.ubj",
+  "trained_at_utc": "2026-07-09T13:11:17.394681+00:00",
+  "training_data_file": "C:\\Users\\risha\\Documents\\phishing_detector\\dataset\\PhiUSIIL_Phishing_URL_Dataset.csv",
+  "training_data_sha256_prefix": "23c2f7803a9c4c3e",
+  "n_train_rows": 199276,
+  "n_test_rows": 47159,
+  "feature_names": [
+    "url_length",
+    "domain_length",
+    "path_length",
+    "query_length",
+    "num_dots",
+    "num_hyphens",
+    "num_underscores",
+    "num_slashes",
+    "num_digits",
+    "num_letters",
+    "digit_ratio",
+    "letter_ratio",
+    "num_special_chars",
+    "special_char_ratio",
+    "num_subdomains",
+    "is_ip_address",
+    "is_https",
+    "tld_length",
+    "num_equals",
+    "num_question_marks",
+    "num_ampersands",
+    "num_percent_encoded",
+    "has_obfuscation",
+    "domain_entropy",
+    "has_at_symbol",
+    "num_path_segments",
+    "suspicious_keyword_count",
+    "has_port",
+    "is_common_tld",
+    "has_mixed_script",
+    "is_punycode",
+    "num_confusable_chars",
+    "confusable_char_ratio",
+    "domain_has_obfuscated_suspicious_term"
+  ],
+  "feature_constants_fingerprint": "a5efd12708a619fb",
+  "text_feature": "_path_query_text (path+query only, char 3-5 grams, max 2000 features)",
+  "label_convention": "1 = phishing, 0 = benign",
+  "metrics": {
+    "roc_auc": 0.9926184908932427,
+    "phishing_precision": 0.9908925318761385,
+    "phishing_recall": 0.9700331863886275,
+    "confusion_matrix": [
+      [
+        26790,
+        180
+      ],
+      [
+        605,
+        19584
+      ]
+    ]
+  },
+  "realistic_heldout_metrics": {
+    "n": 34,
+    "accuracy": 0.9411764705882353,
+    "precision": 0.8823529411764706,
+    "recall": 1.0,
+    "f1": 0.9375,
+    "false_positive_rate": 0.10526315789473684,
+    "false_negative_rate": 0.0,
+    "n_false_positives": 2,
+    "n_false_negatives": 0,
+    "misclassified": [
+      {
+        "url": "https://quickbooks.intuit.com/r/taxes/freelance-taxes/",
+        "true_label": 0,
+        "predicted": 1,
+        "probability": 0.8604881167411804
+      },
+      {
+        "url": "https://www.doggoneproblems.com/miles/",
+        "true_label": 0,
+        "predicted": 1,
+        "probability": 0.9900784492492676
+      }
+    ]
+  },
+  "known_limitations": [
+    "Trained only on PhiUSIIL; no live WHOIS/DNS/TLS signal. An earlier exploratory model using network/WHOIS/DNS metadata (dataset_small.csv) was tried but never integrated into serving - the dataset was removed as dead weight during a later cleanup pass, since nothing referenced it.",
+    "COMMON_TLDS and SUSPICIOUS_PATH_KEYWORDS are small curated lists - expand via config, not by editing code.",
+    "No content/rendering features by design (WAF-safety tradeoff)",
+    "Training augmented with 254 real benign URLs across 215 distinct hostnames (x8 replication, reduced from 40x after a 100K-URL evaluation proved high replication of a small set causes memorization, not generalization) because PhiUSIIL's legitimate class is 100% bare-homepage URLs with zero real-path examples Still not a full fix; expanding this set further remains the highest-value next step.",
+    "Training also augmented with 7968 synthetic character-substitution/homoglyph phishing examples and 640 legitimate numeric-brand counter-examples (core/wordplay_training_data.py)"
+  ]
+}

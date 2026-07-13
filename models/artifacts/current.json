@@ -1,0 +1,6 @@
+{
+  "version": "20260709T131117Z",
+  "preprocessor_file": "preprocessor_20260709T131117Z.joblib",
+  "xgb_model_file": "model_20260709T131117Z.ubj",
+  "metadata_file": "model_20260709T131117Z.metadata.json"
+}

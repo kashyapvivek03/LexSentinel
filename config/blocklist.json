@@ -1,0 +1,10 @@
+{
+  "_comment": "Placeholder entries only (RFC 2606 reserved .invalid/.example TLDs - never resolve to real infrastructure). In production, populate from live PhishTank / OpenPhish / URLHaus feeds (per blueprint Section 1) on a short refresh interval, since phishing domains die and rotate within hours. Never hand-maintain this list.",
+  "last_updated_utc": "2026-07-06T21:00:00Z",
+  "source": "placeholder - replace with PhishTank/OpenPhish/URLHaus sync",
+  "domains": [
+    "secure-login-verify.invalid",
+    "account-update-confirm.example",
+    "phishing-test-domain.invalid"
+  ]
+}

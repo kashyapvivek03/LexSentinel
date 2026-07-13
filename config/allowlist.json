@@ -1,0 +1,31 @@
+{
+  "_comment": "Seed list for local dev/demo only. In production, populate this from the Tranco Top 1M or Cisco Umbrella list (per blueprint Section 1) via scripts/refresh_lists.py, and store it in Redis/a DB, not a file re-deployed with the app. This file's staleness is exactly the risk the audit flagged - it must be refreshed on a schedule, not edited by hand. NOTE: this list serves TWO purposes - the allowlist fast-path AND the set of protected brands core/typosquat.py checks against, so expanding it improves both at once. Coverage gaps here directly become typosquat blind spots (found via testing: flipkart.com and instagram.com weren't in this list, so their typosquats went undetected even though the algorithm itself was capable of catching them).",
+  "last_updated_utc": "2026-07-07T11:15:00Z",
+  "source": "manually seeded for demo - replace with Tranco Top 1M sync",
+  "domains": [
+    "google.com", "youtube.com", "wikipedia.org", "github.com",
+    "microsoft.com", "apple.com", "amazon.com", "discord.com",
+    "perplexity.ai", "anthropic.com", "reddit.com", "linkedin.com",
+    "india.gov.in", "icici.bank.in", "sbi.co.in", "rbi.org.in",
+    "irs.gov", "usa.gov", "nih.gov",
+
+    "instagram.com", "facebook.com", "whatsapp.com", "twitter.com",
+    "x.com", "netflix.com", "spotify.com", "snapchat.com",
+    "pinterest.com", "tiktok.com", "telegram.org",
+
+    "flipkart.com", "myntra.com", "paytm.com", "phonepe.com",
+    "amazon.in", "jiomart.com", "ajio.com", "nykaa.com",
+    "meesho.com", "swiggy.com", "zomato.com", "olacabs.com",
+    "irctc.co.in", "hotstar.com", "jio.com", "airtel.in",
+
+    "hdfcbank.com", "axisbank.com", "kotak.com", "yesbank.in",
+    "idfcfirstbank.com", "bankofbaroda.in", "pnbindia.in",
+    "unionbankofindia.co.in", "canarabank.com", "indusind.com",
+
+    "microsoft365.com", "office.com", "outlook.com", "gmail.com",
+    "phishing-detector-f65f.onrender.com",
+    "yahoo.com", "dropbox.com", "adobe.com", "salesforce.com",
+    "zoom.us", "slack.com", "notion.so", "stripe.com", "paypal.com",
+    "1password.com", "auth0.com", "id.me", "23andme.com", "9gag.com"
+  ]
+}

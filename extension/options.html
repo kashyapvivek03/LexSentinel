@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { background:#0b0f19; color:#e5e7eb; font-family:-apple-system,sans-serif;
+         max-width:480px; margin:40px auto; padding:0 20px; }
+  h1 { font-size:18px; }
+  label { display:block; font-size:13px; color:#9ca3af; margin:16px 0 6px; }
+  input[type=text] { width:100%; box-sizing:border-box; background:#111827; border:1px solid #374151;
+          color:#e5e7eb; border-radius:8px; padding:10px 12px; font-size:14px; font-family:monospace; }
+  button { background:#2563eb; color:white; border:none; border-radius:8px;
+           padding:10px 20px; font-size:14px; cursor:pointer; margin-top:16px; }
+  .saved { color:#6ee7b7; font-size:13px; margin-left:12px; }
+  .error { color:#fca5a5; font-size:13px; margin-left:12px; }
+  .hint { font-size:12px; color:#6b7280; margin-top:6px; line-height:1.4; }
+</style>
+</head>
+<body>
+  <h1>Phishing URL Checker - Settings</h1>
+
+  <label for="backendUrl">Backend URL</label>
+  <input type="text" id="backendUrl" placeholder="https://your-app.onrender.com" />
+  <div class="hint">
+    No trailing slash. Use <code>http://localhost:8000</code> while testing locally,
+    or your deployed Render URL once it's live. The extension calls
+    <code>&lt;this&gt;/api/check</code> for every site you visit.
+  </div>
+
+  <button id="saveBtn">Save</button>
+  <span class="saved" id="savedMsg" style="display:none">Saved</span>
+  <span class="error" id="errMsg" style="display:none">Not a valid http(s) URL &mdash; not saved</span>
+
+<script src="options.js"></script>
+</body>
+</html>

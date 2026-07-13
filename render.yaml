@@ -1,0 +1,25 @@
+# Render blueprint - the README's deploy steps say Render auto-detects
+# this file and pre-fills the build/start commands. It didn't exist until
+# the 2026-07-09 audit; the manual fallback instructions in the README
+# still work if you prefer to configure by hand.
+services:
+  - type: web
+    name: phishing-detector
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      # Match runtime.txt - Render's Python version is set via env var,
+      # not runtime.txt (that file is read by other hosts/tooling).
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      # Closes /docs//redoc//openapi.json on the public deployment and
+      # tells core/auth.py it's genuinely behind Render's proxy (safe to
+      # read X-Forwarded-For for rate-limit bucketing).
+      - key: APP_ENV
+        value: production
+      # Set PHISHING_DETECTOR_DEV_KEY in the Render dashboard (sync: false
+      # means Render prompts for it instead of storing it in this file).
+      - key: PHISHING_DETECTOR_DEV_KEY
+        sync: false

@@ -1,0 +1,28 @@
+name: Tests
+
+# Runs the full pytest suite on every push and pull request against main.
+# This makes the "run it in CI on every PR" comments already in
+# tests/test_regression_known_sites.py actually true, rather than aspirational.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run tests
+        run: pytest tests/ -v

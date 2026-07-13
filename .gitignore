@@ -1,0 +1,19 @@
+# Fixes audit findings: repo metadata, IDE metadata, and logs must never
+# ship in a release archive.
+.git/
+.claude/
+__pycache__/
+*.pyc
+*.pyo
+logs/
+*.log
+.pytest_cache/
+venv/
+.env
+config/dev_key.txt
+data/
+# Large redistributable dataset (get PhiUSIIL from Kaggle); see README
+dataset/
+
+x/
+APPLY_INSTRUCTIONS.txt
